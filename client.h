@@ -49,13 +49,16 @@ struct IReply
     std::vector<std::string> followers;
 };
 
-
+//some sort of way to parse stdin and wait for response, then returns that response as a string
 std::string getPostMessage();
+//takes in the sender, message, and time then outputs them in nice format
 void displayPostMessage(const std::string& sender, const std::string& message, std::time_t& time);
   
 class IClient
 {
 public:
+  //main loop for client, connect to server, run main loop
+  //  -calls processCommand and process timeline
   void run();
   
 protected:
@@ -67,8 +70,12 @@ protected:
   virtual void processTimeline() = 0;
   
 private:
+  //lists all of the command options
   void displayTitle() const;
+  //waits for and parses line for valid input
   std::string getCommand() const;
+  //displays the reply of the server
+  //  -Inputs: 
   void displayCommandReply(const std::string& comm, const IReply& reply) const;
   void toUpperCase(std::string& str) const;
 };
