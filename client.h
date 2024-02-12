@@ -38,6 +38,8 @@ enum IStatus
  *
  * This structure is not for communicating between server and client.
  * You need to design your own rules for the communication.
+ * 
+ * stores grpc response status, some other status, a list of all users that connected to the server, and list of all followers
  */
 struct IReply
 {
