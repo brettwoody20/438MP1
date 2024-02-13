@@ -4,3 +4,5 @@ sns.grpc.pb.o
 sns.pb.cc
 sns.pb.h
 sns.pb.o
+tsd
+tsd.o

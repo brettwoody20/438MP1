@@ -5,7 +5,7 @@
 #include <string>
 #include <unistd.h>
 #include <csignal>
-#include <grpc++/grpc++.h>
+#include <grpcpp/grpcpp.h>
 #include "client.h"
 
 #include "sns.grpc.pb.h"
@@ -84,8 +84,12 @@ int Client::connectTo()
 ///////////////////////////////////////////////////////////
 // YOUR CODE HERE
 //////////////////////////////////////////////////////////
-  login_info = hostname + ":" + port;
-
+  string login_info = hostname + ":" + port;
+  stub_ = new SNSService::Stub(..., login_info, ...);
+  reply = login();
+  if (!reply.status.ok()) {
+    return -1;
+  }
     return 1;
 }
 
