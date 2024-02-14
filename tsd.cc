@@ -78,19 +78,30 @@ struct Client {
   }
 };
 
-//Vector that stores every client that has been created
+//Vector that stores every client (and their data)
 std::vector<Client*> client_db;
 
 
 class SNSServiceImpl final : public SNSService::Service {
   
+  //replies with ListReply where all_users is the name of all users and followers is the list of users that follow the user
+  //Note: request contains the user
   Status List(ServerContext* context, const Request* request, ListReply* list_reply) override {
+    /*
+    c = client_db[request->username];
+    add users in client_db to list_reply;
+    add (followers of c) to list_reply
+    */
+    
     /*********
     YOUR CODE HERE
     **********/
     return Status::OK;
   }
 
+  //Inputs: request (usernmae, arguments)
+  //Func: verify the user exists and then add it to the appropriate lists of following/followers
+  //Outputs: replies with the success of the command
   Status Follow(ServerContext* context, const Request* request, Reply* reply) override {
 
     /*********
@@ -99,6 +110,9 @@ class SNSServiceImpl final : public SNSService::Service {
     return Status::OK; 
   }
 
+  //Inputs: request (username, arguements)
+  //Func: verify the users exists, remove them from appropriate lists of following/followers
+  //Outputs: replies with success of the command
   Status UnFollow(ServerContext* context, const Request* request, Reply* reply) override {
 
     /*********
@@ -108,9 +122,17 @@ class SNSServiceImpl final : public SNSService::Service {
     return Status::OK;
   }
 
-  // RPC Login
-  Status Login(ServerContext* context, const Request* request, Reply* reply) override {
 
+  Status Login(ServerContext* context, const Request* request, Reply* reply) override {
+    /*
+    c = getClient(request.username)
+    if (c.connected) {
+      login failed
+    } else {
+      login suceeded
+    }
+    return Status::Ok
+    */
     /*********
     YOUR CODE HERE
     **********/
@@ -118,8 +140,11 @@ class SNSServiceImpl final : public SNSService::Service {
     return Status::OK;
   }
 
+
   Status Timeline(ServerContext* context, 
 		ServerReaderWriter<Message, Message>* stream) override {
+    
+
 
     /*********
     YOUR CODE HERE
@@ -131,9 +156,12 @@ class SNSServiceImpl final : public SNSService::Service {
 };
 
 void RunServer(std::string port_no) {
+  //construct server address
   std::string server_address = "0.0.0.0:"+port_no;
+  //create instance of SNSSServiceImpl to implement grpc methods
   SNSServiceImpl service;
 
+  //serverBuilder is a grpc class provided to help construct servers
   ServerBuilder builder;
   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
   builder.RegisterService(&service);
@@ -141,6 +169,7 @@ void RunServer(std::string port_no) {
   std::cout << "Server listening on " << server_address << std::endl;
   log(INFO, "Server listening on "+server_address);
 
+  //wait for rpc requests
   server->Wait();
 }
 

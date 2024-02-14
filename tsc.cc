@@ -5,7 +5,7 @@
 #include <string>
 #include <unistd.h>
 #include <csignal>
-#include <grpcpp/grpcpp.h>
+#include <grpc++/grpc++.h>
 #include "client.h"
 
 #include "sns.grpc.pb.h"
@@ -85,9 +85,9 @@ int Client::connectTo()
 // YOUR CODE HERE
 //////////////////////////////////////////////////////////
   string login_info = hostname + ":" + port;
-  auto CHannel = CreateChannel(login_info)
+  auto chan = grpc::CreateChannel(login_info, grpc::InsecureChennelCredentials()); 
   //new line
-  stub_ = new SNSService::Stub(CreateChannel());
+  stub_ = new SNSService::Stub(chan);
   Reply reply = Login();
   if (!reply.status.ok()) {
     return -1;

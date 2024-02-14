@@ -1,3 +1,4 @@
+greeter_client.cc
 sns.grpc.pb.o
 sns.pb.cc
 sns.pb.h
