@@ -87,7 +87,7 @@ int Client::connectTo()
 ///////////////////////////////////////////////////////////
 // YOUR CODE HERE
 //////////////////////////////////////////////////////////
-  string login_info = hostname + ":" + port;
+  std::string login_info = hostname + ":" + port;
   auto chan = grpc::CreateChannel(login_info, grpc::InsecureChennelCredentials()); 
   //new line
   stub_ = new SNSService::Stub(chan);
@@ -165,6 +165,8 @@ IReply Client::processCommand(std::string& input)
     /*********
     YOUR CODE HERE
     **********/
+
+
 
     return ire;
 }
