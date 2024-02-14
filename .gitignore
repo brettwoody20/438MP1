@@ -1,5 +1,3 @@
-sns.grpc.pb.cc
-sns.grpc.pb.h
 sns.grpc.pb.o
 sns.pb.cc
 sns.pb.h

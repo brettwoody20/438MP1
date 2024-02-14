@@ -85,8 +85,10 @@ int Client::connectTo()
 // YOUR CODE HERE
 //////////////////////////////////////////////////////////
   string login_info = hostname + ":" + port;
-  stub_ = new SNSService::Stub(..., login_info, ...);
-  reply = login();
+  auto CHannel = CreateChannel(login_info)
+  //new line
+  stub_ = new SNSService::Stub(CreateChannel());
+  Reply reply = Login();
   if (!reply.status.ok()) {
     return -1;
   }
