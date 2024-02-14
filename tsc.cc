@@ -3,6 +3,7 @@
 #include <thread>
 #include <vector>
 #include <string>
+#include <sstream>
 #include <unistd.h>
 #include <csignal>
 #include <grpc++/grpc++.h>
@@ -65,6 +66,8 @@ private:
   IReply Follow(const std::string &username);
   IReply UnFollow(const std::string &username);
   void   Timeline(const std::string &username);
+  std::vector<std::string> Split(const std::string& str);
+  void Client::toUpperCase(std::string& str) const
 };
 
 
@@ -109,6 +112,21 @@ IReply Client::processCommand(std::string& input)
   // LIST
   // TIMELINE
   // ------------------------------------------------------------
+
+  //cmds contains the command at cmds[0] and any additional arguements at cmds[1]
+  std::vector<std::string> cmds = split(input);
+
+  toUpperCase(cmds[0]);
+  if (cmds[0] == "FOLLOW") {
+    Follow(cmds[1]);
+  } else if (cmds[0] == "UNFOLLOW") {
+    UnFollow(cmds[1]);
+  } else if (cmds[0] == "LIST") {
+    List();
+  } else if (cmds[0] == "TIMELINE") {
+    //Timeline
+  }
+
   
   // ------------------------------------------------------------
   // GUIDE 2:
@@ -229,6 +247,27 @@ void Client::Timeline(const std::string& username) {
     YOUR CODE HERE
     ***/
 
+}
+
+std::string Client::Split(const std::string& str) {
+  std::vector<std::string> ret;
+  std::istringstream iss(input);
+  std::string word;
+
+  //push the next two words into vecotr
+  iss >> word;
+  ret.push_back(word);
+  iss >> word;
+  ret.push_back(word);
+
+  return ret;
+}
+
+void Client::toUpperCase(std::string& str) const
+{
+  std::locale loc;
+  for (std::string::size_type i = 0; i < str.size(); i++)
+    str[i] = toupper(str[i], loc);
 }
 
 
