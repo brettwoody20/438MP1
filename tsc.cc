@@ -341,11 +341,29 @@ void Client::Timeline(const std::string& username) {
     // to command mode. You don't have to worry about this situation,
     // and you can terminate the client program by pressing
     // CTRL-C (SIGINT)
+    //###
+    // gRPC_RW_Steam stream(stub_->Timeline(...));
+    //
+    // writer_thread([...](){
+    //     while(1){
+    //         stream->writeMessageToStream(terminal_message);
+    //     }
+    // });
+    //
+    // reader_thread([...](){
+    //     while(stream.read(Message m)){
+    //         displayPostMessage(…, m, timestamp);
+    //     }
+    // });
+    // threads_join()
+
     // ------------------------------------------------------------
   
     /***
     YOUR CODE HERE
     ***/
+
+   
 
 }
 

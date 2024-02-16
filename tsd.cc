@@ -232,6 +232,22 @@ class SNSServiceImpl final : public SNSService::Service {
 
     /*********
     YOUR CODE HERE
+    Message m;
+    while(stream.read(&m)){
+        string u = m.username
+        Client c = getClient(u)
+        ffo = format_file_output(timestamp, request.username, m)
+        if(!first_timeline_stream()){
+            append ffo to file u.txt
+        }else{
+            lat20 = read 20 latest massages from file u_following.txt;
+            stream->write(lat20);
+        }
+        for f in c.followers:
+            f->stream->write(ffo)
+            append ffo to the file f_following.txt        
+    }
+
     **********/
     
     return Status::OK;
