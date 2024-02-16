@@ -68,7 +68,7 @@ using csce438::SNSService;
 
 struct Client {
   std::string username;
-  bool connected = true;
+  bool connected = false;
   int following_file_size = 0;
   std::vector<Client*> client_followers;
   std::vector<Client*> client_following;
@@ -107,6 +107,12 @@ class SNSServiceImpl final : public SNSService::Service {
     /*********
     YOUR CODE HERE
     **********/
+    
+    //first validate that both users exist
+
+
+    //if both users exist, then add them to appropriate following/followers list
+    
     return Status::OK; 
   }
 
@@ -138,12 +144,24 @@ class SNSServiceImpl final : public SNSService::Service {
     **********/
 
     Client* c = getClient(request->username());
-    //If client is alread logged in then return they can't log in here
+
+    //if the client was not found (DNE) then create it and add it to the database
+    if (c == nullptr) {
+      c = new Client;
+      c->username = request->username();
+      client_db.push_back(c);
+      std::cout << "new client created: " << c->username << std::endl;
+    }
+
+    //If client is alread logged in then return they can't log in here, otherwise log them in
+    //The F and S are used to communicate with the client which branch occured
     if (c->connected) {
-      return grpc::Status::UNKNOWN;
+      reply->set_msg("F");
+    } else {
+      reply->set_msg("S");
+      c->connected = true;
     }
     
-    c->connected = true;
     return Status::OK;
   }
 

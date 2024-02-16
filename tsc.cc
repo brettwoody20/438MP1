@@ -272,7 +272,17 @@ IReply Client::Login() {
     grpc::Status status = stub_->Login(&context, request, &reply);
     ire.grpc_status = status;
     if (ire.grpc_status.ok()) {
-      ire.comm_status = IStatus::SUCCESS;
+      //msg returns a character, S means it successfuly logged in, F means it failed to, that they were already logged in
+      switch(reply.msg()[0]) {
+        case 'S':
+          ire.comm_status = IStatus::SUCCESS;
+          break;
+        case 'F':
+          ire.comm_status = IStatus::FAILURE_ALREADY_EXISTS;
+          break;
+        default:
+          ire.comm_status = IStatus::FAILURE_UNKNOWN;
+      }
     } else {
       ire.comm_status = IStatus::FAILURE_UNKNOWN;
     }
