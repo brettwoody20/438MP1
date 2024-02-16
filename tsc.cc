@@ -189,13 +189,17 @@ IReply Client::List() {
 
     ire.grpc_status = status;
     //check ire status
-    for (int i = 0; i < listReply.all_users_size(); ++i) {
-      ire.all_users.push_back(listReply.all_users(i));
+    if (ire.grpc_status.ok()) {
+      for (int i = 0; i < listReply.all_users_size(); ++i) {
+        ire.all_users.push_back(listReply.all_users(i));
+      }
+      for (int i = 0; i < listReply.followers_size(); ++i) {
+        ire.followers.push_back(listReply.followers(i));
+      }
+      ire.comm_status = IStatus::SUCCESS;
+    } else {
+      ire.comm_status = IStatus::FAILURE_INVALID;
     }
-    for (int i = 0; i < listReply.followers_size(); ++i) {
-      ire.followers.push_back(listReply.followers(i));
-    }
-
 
     return ire;
 }
@@ -218,6 +222,11 @@ IReply Client::Follow(const std::string& username2) {
 
     ire.grpc_status = status;
     //check status
+    if (ire.grpc_status.ok()) {
+      ire.comm_status = IStatus::SUCCESS;
+    } else {
+      ire.comm_status = IStatus::FAILURE_UNKNOWN;
+    }
 
     return ire;
 }
@@ -236,7 +245,13 @@ IReply Client::UnFollow(const std::string& username2) {
     request.add_arguments(username2);
     Reply reply;
 
-    grpc::Status status = stub_->Unfollow(&context, request, &reply);
+    grpc::Status status = stub_->UnFollow(&context, request, &reply);
+    ire.grpc_status = status;
+    if (ire.grpc_status.ok()) {
+      ire.comm_status = IStatus::SUCCESS;
+    } else {
+      ire.comm_status = IStatus::FAILURE_UNKNOWN;
+    }
     
     return ire;
 }
@@ -249,6 +264,18 @@ IReply Client::Login() {
     /***
      YOUR CODE HERE
     ***/
+    ClientContext context;
+    Request request;
+    request.set_username(username);
+    Reply reply;
+
+    grpc::Status status = stub_->Login(&context, request, &reply);
+    ire.grpc_status = status;
+    if (ire.grpc_status.ok()) {
+      ire.comm_status = IStatus::SUCCESS;
+    } else {
+      ire.comm_status = IStatus::FAILURE_UNKNOWN;
+    }
 
     return ire;
 }

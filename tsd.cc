@@ -136,7 +136,14 @@ class SNSServiceImpl final : public SNSService::Service {
     /*********
     YOUR CODE HERE
     **********/
+
+    Client* c = getClient(request->username());
+    //If client is alread logged in then return they can't log in here
+    if (c->connected) {
+      return grpc::Status::UNKNOWN;
+    }
     
+    c->connected = true;
     return Status::OK;
   }
 
@@ -152,6 +159,18 @@ class SNSServiceImpl final : public SNSService::Service {
     
     return Status::OK;
   }
+
+  private :
+
+    Client* getClient(std::string username) {
+      Client* ret = nullptr;
+      for (Client* c : client_db) {
+        if (c->username == username) {
+          ret = c;
+        }
+      }
+      return ret;
+    }
 
 };
 
