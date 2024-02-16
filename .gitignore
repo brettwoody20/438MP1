@@ -5,3 +5,6 @@ sns.pb.h
 sns.pb.o
 tsd
 tsd.o
+tsc
+tsc.o
+.vscode/

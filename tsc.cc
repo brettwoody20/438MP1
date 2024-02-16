@@ -66,8 +66,8 @@ private:
   IReply Follow(const std::string &username);
   IReply UnFollow(const std::string &username);
   void   Timeline(const std::string &username);
-  std::vector<std::string> Split(const std::string& str);
-  void Client::toUpperCase(std::string& str) const
+  std::vector<std::string> split(const std::string& str);
+  void toUpperCase(std::string& str) const;
 };
 
 
@@ -88,11 +88,11 @@ int Client::connectTo()
 // YOUR CODE HERE
 //////////////////////////////////////////////////////////
   std::string login_info = hostname + ":" + port;
-  auto chan = grpc::CreateChannel(login_info, grpc::InsecureChennelCredentials()); 
+  auto chan = grpc::CreateChannel(login_info, grpc::InsecureChannelCredentials()); 
   //new line
-  stub_ = new SNSService::Stub(chan);
-  Reply reply = Login();
-  if (!reply.status.ok()) {
+  stub_ = std::make_unique<SNSService::Stub>(chan);
+  IReply reply = Login();
+  if (!reply.grpc_status.ok()) {
     return -1;
   }
     return 1;
@@ -112,22 +112,6 @@ IReply Client::processCommand(std::string& input)
   // LIST
   // TIMELINE
   // ------------------------------------------------------------
-
-  //cmds contains the command at cmds[0] and any additional arguements at cmds[1]
-  std::vector<std::string> cmds = split(input);
-
-  toUpperCase(cmds[0]);
-  if (cmds[0] == "FOLLOW") {
-    Follow(cmds[1]);
-  } else if (cmds[0] == "UNFOLLOW") {
-    UnFollow(cmds[1]);
-  } else if (cmds[0] == "LIST") {
-    List();
-  } else if (cmds[0] == "TIMELINE") {
-    //Timeline
-  }
-
-  
   // ------------------------------------------------------------
   // GUIDE 2:
   // Then, you should create a variable of IReply structure
@@ -135,8 +119,6 @@ IReply Client::processCommand(std::string& input)
   // the result. Finally you can finish this function by returning
   // the IReply.
   // ------------------------------------------------------------
-  
-  
   // ------------------------------------------------------------
   // HINT: How to set the IReply?
   // Suppose you have "FOLLOW" service method for FOLLOW command,
@@ -165,7 +147,20 @@ IReply Client::processCommand(std::string& input)
     /*********
     YOUR CODE HERE
     **********/
+    std::vector<std::string> cmds = split(input);
+    toUpperCase(cmds[0]);
 
+
+    if (cmds[0] == "FOLLOW") {
+      ire = Follow(cmds[1]);
+    } else if (cmds[0] == "UNFOLLOW") {
+      ire = UnFollow(cmds[1]);
+    } else if (cmds[0] == "LIST") {
+      ire = List();
+    } else if (cmds[0] == "TIMELINE") {
+      //ire.grpc_status = grpc::Status::OK;
+      //ire.comm_status = IStatus::SUCCESS;
+    }
 
 
     return ire;
@@ -185,6 +180,20 @@ IReply Client::List() {
     /*********
     YOUR CODE HERE
     **********/
+    ClientContext context;
+    Request request;
+    request.set_username(username);
+    ListReply listReply;
+
+    grpc::Status status = stub_->List(&context, request, &listReply);
+
+    ire.grpc_status = status;
+    for (int i = 0; i < listReply.all_users_size(); ++i) {
+      ire.all_users.push_back(listReply.all_users(i));
+    }
+    for (int i = 0; i < listReply.followers_size(); ++i) {
+      ire.followers.push_back(listReply.followers(i));
+    }
 
     return ire;
 }
@@ -251,9 +260,9 @@ void Client::Timeline(const std::string& username) {
 
 }
 
-std::string Client::Split(const std::string& str) {
+std::vector<std::string> Client::split(const std::string& str) {
   std::vector<std::string> ret;
-  std::istringstream iss(input);
+  std::istringstream iss(str);
   std::string word;
 
   //push the next two words into vecotr
