@@ -158,8 +158,8 @@ IReply Client::processCommand(std::string& input)
     } else if (cmds[0] == "LIST") {
       ire = List();
     } else if (cmds[0] == "TIMELINE") {
-      //ire.grpc_status = grpc::Status::OK;
-      //ire.comm_status = IStatus::SUCCESS;
+      ire.grpc_status = grpc::Status::OK;
+      ire.comm_status = IStatus::SUCCESS;
     }
 
 
@@ -188,12 +188,14 @@ IReply Client::List() {
     grpc::Status status = stub_->List(&context, request, &listReply);
 
     ire.grpc_status = status;
+    //check ire status
     for (int i = 0; i < listReply.all_users_size(); ++i) {
       ire.all_users.push_back(listReply.all_users(i));
     }
     for (int i = 0; i < listReply.followers_size(); ++i) {
       ire.followers.push_back(listReply.followers(i));
     }
+
 
     return ire;
 }
@@ -206,6 +208,16 @@ IReply Client::Follow(const std::string& username2) {
     /***
     YOUR CODE HERE
     ***/
+    ClientContext context;
+    Request request;
+    request.set_username(username);
+    request.add_arguments(username2);
+    Reply reply;
+
+    grpc::Status status = stub_->Follow(&context, request, &reply);
+
+    ire.grpc_status = status;
+    //check status
 
     return ire;
 }
@@ -218,7 +230,14 @@ IReply Client::UnFollow(const std::string& username2) {
     /***
     YOUR CODE HERE
     ***/
+    ClientContext context;
+    Request request;
+    request.set_username(username);
+    request.add_arguments(username2);
+    Reply reply;
 
+    grpc::Status status = stub_->Unfollow(&context, request, &reply);
+    
     return ire;
 }
 
