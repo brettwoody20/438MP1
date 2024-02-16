@@ -40,6 +40,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <algorithm>
 #include <stdlib.h>
 #include <unistd.h>
 #include <google/protobuf/util/time_util.h>
@@ -108,10 +109,22 @@ class SNSServiceImpl final : public SNSService::Service {
     YOUR CODE HERE
     **********/
     
-    //first validate that both users exist
+    //first validate that both users exist and are seperate users
+    Client* u1 = getClient(request->username());
+    Client* u2 = getClient(request->arguments()[0]);
+
+    if (u1 == nullptr || u2 == nullptr || u1 == u2) {
+      reply->set_msg("I");
+      return Status::OK;
+    }
 
 
-    //if both users exist, then add them to appropriate following/followers list
+    //if both users exist, then add them to appropriate following/followers list (u1 follows u2)
+    u1->client_following.push_back(u2);
+    u2->client_followers.push_back(u1);
+
+    std::cout << u1->username << " followed " << u2->username << std::endl;
+    reply->set_msg("S");
     
     return Status::OK; 
   }
@@ -124,6 +137,34 @@ class SNSServiceImpl final : public SNSService::Service {
     /*********
     YOUR CODE HERE
     **********/
+
+    Client* u1 = getClient(request->username());
+    Client* u2 = getClient(request->arguments()[0]);
+
+    //ensure both usernames exist in database as well as that they are not the same
+    if (u1 == nullptr || u2 == nullptr || u1 == u2) {
+      reply->set_msg("I");
+      return Status::OK;
+    }
+
+    //if everything is valid, u1 unfollows u2
+
+    //find u2 in u1's following list
+    auto it1 = std::find(u1->client_following.begin(), u1->client_following.end(), u2);
+    
+    //if it wasn't found, return the error, otherwise remove it from the vector
+    if (it1 == u1->client_following.end()) {
+      reply->set_msg("U");
+      return Status::OK;
+    } else {
+      u1->client_following.erase(it1);
+    }
+
+    //attempt to find and remove u1 from u2 followers list
+    auto it2 = std::find(u2->client_followers.begin(), u2->client_followers.end(), u1);
+    if ( it2 != u2->client_followers.end()) {
+      u2->client_followers.erase(it2);
+    }
 
     return Status::OK;
   }
@@ -188,6 +229,16 @@ class SNSServiceImpl final : public SNSService::Service {
         }
       }
       return ret;
+    }
+
+    //returns true if u1 followes u2
+    bool follows(Client* u1, Client* u2) {
+      for (Client* user : u1->client_following) {
+        if (u2 == user) {
+          return true;
+        }
+      }
+      return false;
     }
 
 };
