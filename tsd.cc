@@ -210,6 +210,12 @@ class SNSServiceImpl final : public SNSService::Service {
       c = new Client;
       c->username = request->username();
       client_db.push_back(c);
+      //create new files to store data about its timeline
+      std::ofstream postsFile(c->username+"_posts.txt");
+      std::ofstream timelineFile(c->username+"_timeline.txt");
+      postsFile.close();
+      postsFile.close();
+
     }
 
     //If client is alread logged in then return they can't log in here, otherwise log them in
@@ -250,10 +256,10 @@ class SNSServiceImpl final : public SNSService::Service {
 
     **********/
 
-    Mesage m;
-    while(streem.read(&m)) {
+    Message m;
+    while(streem->Read(&m)) {
       std::string username = m.username();
-      Client* c = getClient(usernname);
+      Client* c = getClient(username);
       std::string ffo = formatFileOutput(m);
       if (c->stream == nullptr) {
         c->stream = streem;
@@ -262,7 +268,7 @@ class SNSServiceImpl final : public SNSService::Service {
         appendPost(ffo, username+"_posts");
         for (Client* follower : c->client_followers) {
           if (follower->stream != nullptr) {
-            follower->stream->write(m);
+            follower->stream->Write(m);
           }
           appendPost(ffo, follower->username+"_timeline");
         }
