@@ -90,16 +90,11 @@ class SNSServiceImpl final : public SNSService::Service {
   //replies with ListReply where all_users is the name of all users and followers is the list of users that follow the user
   //Note: request contains the user
   Status List(ServerContext* context, const Request* request, ListReply* list_reply) override {
-    /*
-    c = client_db[request->username];
-    add users in client_db to list_reply;
-    add (followers of c) to list_reply
-    */
     
     /*********
     YOUR CODE HERE
     **********/
-    //add all followers of user to reply
+
     Client* c = getClient(request->username());
 
     //if client is for some reason not found, return error message in the reply (followers vector chosen arbitrarily)
@@ -123,7 +118,8 @@ class SNSServiceImpl final : public SNSService::Service {
 
   //Inputs: request (usernmae, arguments)
   //Func: verify the user exists and then add it to the appropriate lists of following/followers
-  //Outputs: replies with the success of the command
+  //Outputs: replies with the success of the command. 
+  //Reply:  S : succes, I : Invalid users.
   Status Follow(ServerContext* context, const Request* request, Reply* reply) override {
 
     /*********
@@ -140,7 +136,7 @@ class SNSServiceImpl final : public SNSService::Service {
     }
 
 
-    //if both users exist, then add them to appropriate following/followers list (u1 follows u2)
+    //if both users exist and are different, then add them to appropriate following/followers list (u1 follows u2)
     u1->client_following.push_back(u2);
     u2->client_followers.push_back(u1);
 
@@ -151,7 +147,8 @@ class SNSServiceImpl final : public SNSService::Service {
 
   //Inputs: request (username, arguements)
   //Func: verify the users exists, remove them from appropriate lists of following/followers
-  //Outputs: replies with success of the command
+  //Outputs: replies with success of the command.
+  //Reply: S : succes, I : invalid user, U : doesn't follow
   Status UnFollow(ServerContext* context, const Request* request, Reply* reply) override {
 
     /*********
@@ -167,7 +164,7 @@ class SNSServiceImpl final : public SNSService::Service {
       return Status::OK;
     }
 
-    //if everything is valid, u1 unfollows u2
+    //###if everything is valid, u1 unfollows u2###
 
     //find u2 in u1's following list
     auto it1 = std::find(u1->client_following.begin(), u1->client_following.end(), u2);
@@ -180,7 +177,8 @@ class SNSServiceImpl final : public SNSService::Service {
       u1->client_following.erase(it1);
     }
 
-    //attempt to find and remove u1 from u2 followers list
+
+    //attempt to find and remove u1 from u2 followers list (verification isn't necesarry as the end results of finding and removing are both it not being in the list, the error would be with following)
     auto it2 = std::find(u2->client_followers.begin(), u2->client_followers.end(), u1);
     if ( it2 != u2->client_followers.end()) {
       u2->client_followers.erase(it2);
@@ -190,17 +188,12 @@ class SNSServiceImpl final : public SNSService::Service {
     return Status::OK;
   }
 
-
+  //Inputs: request (username)
+  //Func: Initializes user in system if they don't exist, logs them in if they aren't logged in already.
+  //Outputs: replies with success of the command.
+  //Reply: S : succes, F : failure (logged in already)
   Status Login(ServerContext* context, const Request* request, Reply* reply) override {
-    /*
-    c = getClient(request.username)
-    if (c.connected) {
-      login failed
-    } else {
-      login suceeded
-    }
-    return Status::Ok
-    */
+    
     /*********
     YOUR CODE HERE
     **********/
@@ -240,47 +233,41 @@ class SNSServiceImpl final : public SNSService::Service {
 
     /*********
     YOUR CODE HERE
-    Message m;
-    while(stream.read(&m)){
-        string u = m.username
-        Client c = getClient(u)
-        ffo = format_file_output(timestamp, request.username, m)
-        if(!first_timeline_stream()){
-            append ffo to file u.txt
-        }else{
-            lat20 = read 20 latest massages from file u_following.txt;
-            stream->write(lat20);
-        }
-        for f in c.followers:
-            f->stream->write(ffo)
-            append ffo to the file f_following.txt        
-    }
-
     **********/
 
     Message m;
-    //std::cout<< "connection established, waiting for request" << std::endl;
     while(streem->Read(&m)) {
+
+      //get client and formatted string from message
       std::string username = m.username();
       Client* c = getClient(username);
-      //std::cout << "recieved message from " << username << ": " << m.msg() << std::endl;
       std::string ffo = formatFileOutput(m);
+
+      //if the clients ServerReaderWriter stream member has not been used initialized (first message) set up timeline
+      //  Note: the first message is a dummy message with no actual post, discard it after
       if (c->stream == nullptr) {
+        //assign clients timeline so other clients can find it in database and stream to it
         c->stream = streem;
+
+        //get the last 20 posts of users they follow and send them to client
         std::vector<Message> posts = getPosts(username+"_timeline", 20);
         for (Message message : posts) {
-          //std::cout << "sending message to client (20)" << std::endl;
           streem->Write(message);
         }
-      } else {
+
+      } else { //any message other than the first
+
+        //add the post to the user's list of posts
         appendPost(ffo, username+"_posts");
+
+        //for each of their followers, attempt to write to their stream channel if they are in timeline mode and add the post to their file for their timeline
         for (Client* follower : c->client_followers) {
           if (follower->stream != nullptr) {
-            //std::cout << "writing post from " << username << " to " << follower->username << std::endl;
             follower->stream->Write(m);
           }
           appendPost(ffo, follower->username+"_timeline");
         }
+
       }
     }
     
@@ -289,6 +276,8 @@ class SNSServiceImpl final : public SNSService::Service {
 
   private :
 
+    //returns a pointer to a client in the database given their usernam
+    //  ret is nullptr if user is not found
     Client* getClient(std::string username) {
       Client* ret = nullptr;
       for (Client* c : client_db) {
@@ -299,8 +288,8 @@ class SNSServiceImpl final : public SNSService::Service {
       return ret;
     }
 
+    //adds a post to the file by reading the file into memory and then re-writing it with the post at the top
     int appendPost(std::string ffo, std::string filename) {
-      //std::cout << "appending to " << filename << ".txt" << std::endl;
       // Open the file for reading
       std::ifstream inputFile(filename+".txt");
       if (!inputFile.is_open()) {
@@ -312,19 +301,16 @@ class SNSServiceImpl final : public SNSService::Service {
       buffer << inputFile.rdbuf();
       std::string fileContents = buffer.str();
 
-      // Close the input file
       inputFile.close();
 
-      // Open the file for writing (truncate it)
+      // Open the file for writing (truncated)
       std::ofstream outputFile(filename+".txt");
       if (!outputFile.is_open()) {
           return 1;
       }
 
       // Write the new data at the beginning of the file
-      //std::cout << ffo << std::endl;
       outputFile << ffo << fileContents;
-
 
       // Close the output file
       outputFile.close();
@@ -332,6 +318,7 @@ class SNSServiceImpl final : public SNSService::Service {
       return 0;
     }
 
+    //formats a string og the Message
     std::string formatFileOutput(const Message& m) {
       int64_t seconds = m.timestamp().seconds();
       std::string ret = "T " + std::to_string(seconds) + 
@@ -340,6 +327,7 @@ class SNSServiceImpl final : public SNSService::Service {
       return ret;
     }
 
+    //gets the last <numPosts> message from <filename> and returns them in a vector
     std::vector<Message> getPosts(std::string filename, int numPosts) {
       //std::cout << "getting posts from " << filename << ".txt" << std::endl;
       std::vector<Message> ret;
@@ -352,14 +340,17 @@ class SNSServiceImpl final : public SNSService::Service {
       std::string time, username, message;
       std::string line;
       int i = 0;
+      //gets lines of file until the number of message read exceeds numPosts or the file ends.
+      //reads the first part of the line to determine the data type and then constructs a message from it
       while (std::getline(inputFile, line)) {
           if (line.empty()) {
-              // Add new message to ret
+
+              // create new message
               Message m;
-              //std::cout<< "Read Message from " << filename <<".txt: " << username << " : " << message << std::endl;
               m.set_username(username);
               m.set_msg(message);
-              //set timestamp
+
+              //set timestamp in message
               long long temp1 = strtoll(time.c_str(), NULL, 0);
               int64_t temp2 = temp1;
               google::protobuf::Timestamp* timestamp = new google::protobuf::Timestamp();
@@ -373,6 +364,7 @@ class SNSServiceImpl final : public SNSService::Service {
               time.clear();
               username.clear();
               message.clear();
+
               ++i;
               if (i >= numPosts) {
                 break;
@@ -380,7 +372,7 @@ class SNSServiceImpl final : public SNSService::Service {
           } else if (line[0] == 'T') {
               time = line.substr(2); // Extract timestamp (remove "T ")
           } else if (line[0] == 'U') {
-              username = line.substr(21); // Extract username (remove "U ")
+              username = line.substr(21); // Extract username (remove "U http://twitter.com/")
           } else if (line[0] == 'W') {
               message = line.substr(2); // Extract message (remove "W ")
           }
