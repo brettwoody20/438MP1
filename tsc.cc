@@ -92,10 +92,12 @@ int Client::connectTo()
   //new line
   stub_ = std::make_unique<SNSService::Stub>(chan);
   IReply reply = Login();
-  if (!reply.grpc_status.ok()) {
-    return -1;
+  if (reply.grpc_status.ok()) {
+    if (reply.comm_status == IStatus::SUCCESS) {
+      return 1;
+    }
   }
-    return 1;
+    return -1;
 }
 
 IReply Client::processCommand(std::string& input)
@@ -188,8 +190,15 @@ IReply Client::List() {
     grpc::Status status = stub_->List(&context, request, &listReply);
 
     ire.grpc_status = status;
-    //check ire status
+    //check ire status and ensure that the server did not encounter runtime error (this is communicated by a failure message being
+    //  passed into the first index of followers)
     if (ire.grpc_status.ok()) {
+      //check that the server did not encounter runtime error (this is communicated by a failure message being
+      //  passed into the first index of followers), if there was, return that
+      if (listReply.followers_size() > 0 && listReply.followers(0) == "FAILURE UNKNOWN") {
+        ire.comm_status = IStatus::FAILURE_UNKNOWN;
+        return ire;
+      }
       for (int i = 0; i < listReply.all_users_size(); ++i) {
         ire.all_users.push_back(listReply.all_users(i));
       }
@@ -198,7 +207,7 @@ IReply Client::List() {
       }
       ire.comm_status = IStatus::SUCCESS;
     } else {
-      ire.comm_status = IStatus::FAILURE_INVALID;
+      ire.comm_status = IStatus::FAILURE_UNKNOWN;
     }
 
     return ire;
@@ -275,9 +284,11 @@ IReply Client::Login() {
       //msg returns a character, S means it successfuly logged in, F means it failed to, that they were already logged in
       switch(reply.msg()[0]) {
         case 'S':
+          std::cout << "testing success" << std::endl;
           ire.comm_status = IStatus::SUCCESS;
           break;
         case 'F':
+          std::cout << "testing fail" << std::endl;
           ire.comm_status = IStatus::FAILURE_ALREADY_EXISTS;
           break;
         default:

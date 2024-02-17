@@ -97,6 +97,25 @@ class SNSServiceImpl final : public SNSService::Service {
     /*********
     YOUR CODE HERE
     **********/
+    //add all followers of user to reply
+    Client* c = getClient(request->username());
+
+    //if client is for some reason not found, return error message in the reply (followers vector chosen arbitrarily)
+    if (c == nullptr) {
+      list_reply->add_followers("FAILURE UNKNOWN");
+      return Status::OK;
+    }
+
+    //add all followers of user to reply
+    for (Client* follower : c->client_followers) {
+      list_reply->add_followers(follower->username);
+    }
+
+    //add all clients' usernames to reply
+    for (Client* client : client_db) {
+      list_reply->add_all_users(client->username);
+    }
+
     return Status::OK;
   }
 
