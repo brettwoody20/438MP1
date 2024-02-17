@@ -300,13 +300,43 @@ class SNSServiceImpl final : public SNSService::Service {
       return false;
     }
 
-    void appendPost(std::string ffo, std::string filename) {
-      //ToDo
+    int appendPost(std::string ffo, std::string filename) {
+      // Open the file for reading
+      std::ifstream inputFile(filename+".txt");
+      if (!inputFile.is_open()) {
+          return 1;
+      }
+
+      // Read the contents of the file into a string
+      std::stringstream buffer;
+      buffer << inputFile.rdbuf();
+      std::string fileContents = buffer.str();
+
+      // Close the input file
+      inputFile.close();
+
+      // Open the file for writing (truncate it)
+      std::ofstream outputFile(filename+".txt");
+      if (!outputFile.is_open()) {
+          return 1;
+      }
+
+      // Write the new data at the beginning of the file
+      outputFile << ffo << fileContents;
+
+      // Close the output file
+      outputFile.close();
+
+      return 0;
     }
 
-    std::string formatFileOutput(Message m) {
-      //ToDo
+    std::string formatFileOutput(const Message& m) {
+      return "T " + m.timestamp().seconds() + 
+           "\nU http://twitter.com/" + m.username() + 
+           "\nW " + m.msg() + "\n\n";
     }
+
+
 
 };
 

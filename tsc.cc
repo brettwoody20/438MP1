@@ -161,12 +161,6 @@ IReply Client::processCommand(std::string& input)
     } else if (cmds[0] == "UNFOLLOW") {
       ire = UnFollow(cmds[1]);
     } else if (cmds[0] == "LIST") {
-      google::protobuf::Timestamp* timestamp = new google::protobuf::Timestamp();
-      timestamp->set_seconds(time(NULL));
-      timestamp->set_nanos(0);
-      std::time_t time = timestamp->seconds();
-      delete timestamp;
-      std::cout << time << std::endl;
       ire = List();
     } else if (cmds[0] == "TIMELINE") {
       ire.grpc_status = grpc::Status::OK;
