@@ -370,21 +370,24 @@ void Client::Timeline(const std::string& username) {
 
   std::shared_ptr<ClientReaderWriter<Message, Message> > streem(stub_->Timeline(&context));
 
+  std::cout << "client 1" << std::endl;
   std::thread writer([streem, username]() {
-  while(1) {
-    Message mw;
-    mw.set_username(username);
-    mw.set_msg(getPostMessage());
-    streem->Write(mw);
-  }
+    while(1) {
+      std::cout << "reading terminal" << std::endl;
+      std::string message = getPostMessage();
+      Message mw = MakeMessage(username, message);
+      streem->Write(mw);
+    }
   });
 
+  std::cout << "client 2" << std::endl;
   std::thread reader([streem](){
-  Message mr;
-  while(streem->Read(&mr)) {
-    std::time_t time = mr.timestamp().seconds();
-    displayPostMessage(mr.username(), mr.msg(),time);
-  }
+    Message mr;
+    while(streem->Read(&mr)) {
+      std::cout << "read message from " << mr.username() << std::endl;
+      std::time_t time = mr.timestamp().seconds();
+      displayPostMessage(mr.username(), mr.msg(),time);
+    }
   });
   
   reader.join();

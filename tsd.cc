@@ -37,15 +37,17 @@
 #include <google/protobuf/duration.pb.h>
 
 #include <fstream>
+#include <sstream>
 #include <iostream>
 #include <memory>
 #include <string>
+#include <cstring>
 #include <algorithm>
 #include <stdlib.h>
 #include <unistd.h>
 #include <google/protobuf/util/time_util.h>
 #include <grpc++/grpc++.h>
-#include<glog/logging.h>
+#include <glog/logging.h>
 #define log(severity, msg) LOG(severity) << msg; google::FlushLogFiles(google::severity); 
 
 #include "sns.grpc.pb.h"
@@ -257,13 +259,18 @@ class SNSServiceImpl final : public SNSService::Service {
     **********/
 
     Message m;
+    std::cout<< "connection established, waiting for request" << std::endl;
     while(streem->Read(&m)) {
       std::string username = m.username();
       Client* c = getClient(username);
+      std::cout << "recieved message from " << username << ": " << m.msg() << std::endl;
       std::string ffo = formatFileOutput(m);
       if (c->stream == nullptr) {
         c->stream = streem;
-        //get and write the last 20 posts from u_following to streem
+        std::vector<Message> posts = getPosts(username+"_following", 20);
+        for (Message message : posts) {
+          streem->Write(message);
+        }
       } else {
         appendPost(ffo, username+"_posts");
         for (Client* follower : c->client_followers) {
@@ -290,17 +297,8 @@ class SNSServiceImpl final : public SNSService::Service {
       return ret;
     }
 
-    //returns true if u1 followes u2
-    bool follows(Client* u1, Client* u2) {
-      for (Client* user : u1->client_following) {
-        if (u2 == user) {
-          return true;
-        }
-      }
-      return false;
-    }
-
     int appendPost(std::string ffo, std::string filename) {
+      std::cout << "appending to " << filename << ".txt" << std::endl;
       // Open the file for reading
       std::ifstream inputFile(filename+".txt");
       if (!inputFile.is_open()) {
@@ -331,11 +329,61 @@ class SNSServiceImpl final : public SNSService::Service {
     }
 
     std::string formatFileOutput(const Message& m) {
-      return "T " + m.timestamp().seconds() + 
-           "\nU http://twitter.com/" + m.username() + 
-           "\nW " + m.msg() + "\n\n";
+      int64_t seconds = m.timestamp().seconds();
+      std::string ret = "T " + std::to_string(seconds) + 
+                  "\nU http://twitter.com/" + m.username() + 
+                  "\nW " + m.msg() + "\n\n";
+      return ret;
     }
 
+    std::vector<Message> getPosts(std::string filename, int numPosts) {
+      std::cout << "getting posts from " << filename << ".txt" << std::endl;
+      std::vector<Message> ret;
+
+      std::ifstream inputFile(filename+".txt");
+      if (!inputFile.is_open()) {
+          return ret;
+      }
+
+      std::string time, username, message;
+      std::string line;
+      int i = 0;
+      while (std::getline(inputFile, line)) {
+          if (line.empty()) {
+              // Add new message to ret
+              Message m;
+              m.set_username(username);
+              m.set_msg(message);
+              //set timestamp
+              long long temp1 = strtoll(time.c_str(), NULL, 0);
+              int64_t temp2 = temp1;
+              google::protobuf::Timestamp* timestamp = new google::protobuf::Timestamp();
+              timestamp->set_seconds(temp2);
+              timestamp->set_nanos(0);
+              m.set_allocated_timestamp(timestamp);
+
+              ret.push_back(m);
+
+              // Reset variables for the next entry
+              time.clear();
+              username.clear();
+              message.clear();
+              ++i;
+              if (i >= numPosts) {
+                break;
+              }
+          } else if (line[0] == 'T') {
+              time = line.substr(2); // Extract timestamp (remove "T ")
+          } else if (line[0] == 'U') {
+              username = line.substr(21); // Extract username (remove "U ")
+          } else if (line[0] == 'W') {
+              message = line.substr(2); // Extract message (remove "W ")
+          }
+      }
+      inputFile.close();
+      
+      return ret;
+    }
 
 
 };
