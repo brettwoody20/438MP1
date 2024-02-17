@@ -73,7 +73,7 @@ struct Client {
   int following_file_size = 0;
   std::vector<Client*> client_followers;
   std::vector<Client*> client_following;
-  ServerReaderWriter<Message, Message>* stream = 0;
+  ServerReaderWriter<Message, Message>* stream = nullptr;
   bool operator==(const Client& c1) const{
     return (username == c1.username);
   }
@@ -226,7 +226,7 @@ class SNSServiceImpl final : public SNSService::Service {
 
 
   Status Timeline(ServerContext* context, 
-		ServerReaderWriter<Message, Message>* stream) override {
+		ServerReaderWriter<Message, Message>* streem) override {
     
 
 
@@ -249,6 +249,25 @@ class SNSServiceImpl final : public SNSService::Service {
     }
 
     **********/
+
+    Mesage m;
+    while(streem.read(&m)) {
+      std::string username = m.username();
+      Client* c = getClient(usernname);
+      std::string ffo = formatFileOutput(m);
+      if (c->stream == nullptr) {
+        c->stream = streem;
+        //get and write the last 20 posts from u_following to streem
+      } else {
+        appendPost(ffo, username+"_posts");
+        for (Client* follower : c->client_followers) {
+          if (follower->stream != nullptr) {
+            follower->stream->write(m);
+          }
+          appendPost(ffo, follower->username+"_timeline");
+        }
+      }
+    }
     
     return Status::OK;
   }
@@ -273,6 +292,14 @@ class SNSServiceImpl final : public SNSService::Service {
         }
       }
       return false;
+    }
+
+    void appendPost(std::string ffo, std::string filename) {
+      //ToDo
+    }
+
+    std::string formatFileOutput(Message m) {
+      //ToDo
     }
 
 };

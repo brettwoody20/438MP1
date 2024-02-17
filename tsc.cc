@@ -363,8 +363,28 @@ void Client::Timeline(const std::string& username) {
     YOUR CODE HERE
     ***/
 
-   
+  ClientContext context;
 
+  std::shared_ptr<ClientReaderWriter<Message, Message> > streem(stub_->Timeline(context));
+
+  std::thread writer([streem]() {
+  while(1) {
+    Message mw;
+    mw.set_username(username);
+    mw.set_msg(getPostMessage());
+    streem->Write(&mw);
+  }
+  });
+
+  std::thread reader([streem](){
+  Message mr
+  while(streem->Read(&mr)) {
+    displayPostMessage(mr.username(), mr.msg(),mr.timestamp());
+  }
+  });
+  
+  reader.join();
+  writer.join();
 }
 
 std::vector<std::string> Client::split(const std::string& str) {
