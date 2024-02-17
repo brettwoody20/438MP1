@@ -232,7 +232,18 @@ IReply Client::Follow(const std::string& username2) {
     ire.grpc_status = status;
     //check status
     if (ire.grpc_status.ok()) {
-      ire.comm_status = IStatus::SUCCESS;
+      switch (reply.msg()[0]) {
+        case 'S':
+          ire.comm_status = IStatus::SUCCESS;
+          break;
+        case 'I':
+          ire.comm_status = IStatus::FAILURE_INVALID_USERNAME;
+          break;
+        default:
+          ire.comm_status = IStatus::FAILURE_UNKNOWN;
+          break;
+      }
+      
     } else {
       ire.comm_status = IStatus::FAILURE_UNKNOWN;
     }
@@ -257,7 +268,20 @@ IReply Client::UnFollow(const std::string& username2) {
     grpc::Status status = stub_->UnFollow(&context, request, &reply);
     ire.grpc_status = status;
     if (ire.grpc_status.ok()) {
-      ire.comm_status = IStatus::SUCCESS;
+      switch (reply.msg()[0]) {
+        case 'S':
+          ire.comm_status = IStatus::SUCCESS;
+          break;
+        case 'I':
+          ire.comm_status = IStatus::FAILURE_INVALID_USERNAME;
+          break;
+        case 'U':
+          ire.comm_status = IStatus::FAILURE_NOT_A_FOLLOWER;
+          break;
+        default:
+          ire.comm_status = IStatus::FAILURE_UNKNOWN;
+          break;
+      }
     } else {
       ire.comm_status = IStatus::FAILURE_UNKNOWN;
     }
@@ -284,11 +308,9 @@ IReply Client::Login() {
       //msg returns a character, S means it successfuly logged in, F means it failed to, that they were already logged in
       switch(reply.msg()[0]) {
         case 'S':
-          std::cout << "testing success" << std::endl;
           ire.comm_status = IStatus::SUCCESS;
           break;
         case 'F':
-          std::cout << "testing fail" << std::endl;
           ire.comm_status = IStatus::FAILURE_ALREADY_EXISTS;
           break;
         default:

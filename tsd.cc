@@ -142,7 +142,6 @@ class SNSServiceImpl final : public SNSService::Service {
     u1->client_following.push_back(u2);
     u2->client_followers.push_back(u1);
 
-    std::cout << u1->username << " followed " << u2->username << std::endl;
     reply->set_msg("S");
     
     return Status::OK; 
@@ -185,6 +184,7 @@ class SNSServiceImpl final : public SNSService::Service {
       u2->client_followers.erase(it2);
     }
 
+    reply->set_msg("S");
     return Status::OK;
   }
 
@@ -210,7 +210,6 @@ class SNSServiceImpl final : public SNSService::Service {
       c = new Client;
       c->username = request->username();
       client_db.push_back(c);
-      std::cout << "new client created: " << c->username << std::endl;
     }
 
     //If client is alread logged in then return they can't log in here, otherwise log them in
