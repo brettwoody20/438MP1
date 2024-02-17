@@ -259,22 +259,24 @@ class SNSServiceImpl final : public SNSService::Service {
     **********/
 
     Message m;
-    std::cout<< "connection established, waiting for request" << std::endl;
+    //std::cout<< "connection established, waiting for request" << std::endl;
     while(streem->Read(&m)) {
       std::string username = m.username();
       Client* c = getClient(username);
-      std::cout << "recieved message from " << username << ": " << m.msg() << std::endl;
+      //std::cout << "recieved message from " << username << ": " << m.msg() << std::endl;
       std::string ffo = formatFileOutput(m);
       if (c->stream == nullptr) {
         c->stream = streem;
-        std::vector<Message> posts = getPosts(username+"_following", 20);
+        std::vector<Message> posts = getPosts(username+"_timeline", 20);
         for (Message message : posts) {
+          //std::cout << "sending message to client (20)" << std::endl;
           streem->Write(message);
         }
       } else {
         appendPost(ffo, username+"_posts");
         for (Client* follower : c->client_followers) {
           if (follower->stream != nullptr) {
+            //std::cout << "writing post from " << username << " to " << follower->username << std::endl;
             follower->stream->Write(m);
           }
           appendPost(ffo, follower->username+"_timeline");
@@ -298,7 +300,7 @@ class SNSServiceImpl final : public SNSService::Service {
     }
 
     int appendPost(std::string ffo, std::string filename) {
-      std::cout << "appending to " << filename << ".txt" << std::endl;
+      //std::cout << "appending to " << filename << ".txt" << std::endl;
       // Open the file for reading
       std::ifstream inputFile(filename+".txt");
       if (!inputFile.is_open()) {
@@ -320,7 +322,9 @@ class SNSServiceImpl final : public SNSService::Service {
       }
 
       // Write the new data at the beginning of the file
+      //std::cout << ffo << std::endl;
       outputFile << ffo << fileContents;
+
 
       // Close the output file
       outputFile.close();
@@ -332,12 +336,12 @@ class SNSServiceImpl final : public SNSService::Service {
       int64_t seconds = m.timestamp().seconds();
       std::string ret = "T " + std::to_string(seconds) + 
                   "\nU http://twitter.com/" + m.username() + 
-                  "\nW " + m.msg() + "\n\n";
+                  "\nW " + m.msg() + "\n";
       return ret;
     }
 
     std::vector<Message> getPosts(std::string filename, int numPosts) {
-      std::cout << "getting posts from " << filename << ".txt" << std::endl;
+      //std::cout << "getting posts from " << filename << ".txt" << std::endl;
       std::vector<Message> ret;
 
       std::ifstream inputFile(filename+".txt");
@@ -352,6 +356,7 @@ class SNSServiceImpl final : public SNSService::Service {
           if (line.empty()) {
               // Add new message to ret
               Message m;
+              //std::cout<< "Read Message from " << filename <<".txt: " << username << " : " << message << std::endl;
               m.set_username(username);
               m.set_msg(message);
               //set timestamp
